@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from utils import TryExcept, threaded
 from utils.general import (CONFIG_DIR, FONT, LOGGER, check_font, check_requirements, clip_boxes, increment_path,
-                           is_ascii, xywh2xyxy, xyxy2xywh)
+                           is_ascii, xywh2xyxy, xyxy2xywh, xywh2xyxy_v2, xywh2xyxy_v3)
 from utils.metrics import fitness
 from utils.segment.general import scale_image
 
@@ -564,9 +564,10 @@ def save_one_box(xyxy, im, file=Path('im.jpg'), gain=1.02, pad=10, square=False,
     if square:
         b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
     b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
-    xyxy = xywh2xyxy(b).long()
+    xyxy = xywh2xyxy_v3(b).long()
     clip_boxes(xyxy, im.shape)
     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
+    # crop = im[int(xyxy[0, 1]):int(xyxy[0, 2]), int(xyxy[0, 0]):int(xyxy[0, 1]), ::(1 if BGR else -1)]
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         f = str(increment_path(file).with_suffix('.jpg'))
