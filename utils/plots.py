@@ -20,7 +20,7 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 
 from utils import TryExcept, threaded
-from utils.general import (CONFIG_DIR, FONT, LOGGER, check_font, check_requirements, clip_boxes, increment_path,
+from utils.general import (CONFIG_DIR, FONT, LOGGER, check_font, check_requirements, clip_coords, increment_path,
                            is_ascii, xywh2xyxy, xyxy2xywh, xywh2xyxy_v2, xywh2xyxy_v3)
 from utils.metrics import fitness
 from utils.segment.general import scale_image
@@ -230,6 +230,27 @@ def butter_lowpass_filtfilt(data, cutoff=1500, fs=50000, order=5):
     b, a = butter_lowpass(cutoff, fs, order=order)
     return filtfilt(b, a, data)  # forward-backward filter
 
+def crop_plot(x, img):
+    c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
+    print(c1, c2)
+    print(type(img))
+    crop_img = img[ int(x[1]) : int(x[3]), int(x[0]): int(x[2])]
+    
+    return crop_img
+
+
+def plot_one_box_PIL(box, img, color=None, label=None, line_thickness=None):
+    img = Image.fromarray(img)
+    draw = ImageDraw.Draw(img)
+    line_thickness = line_thickness or max(int(min(img.size) / 200), 2)
+    draw.rectangle(box, width=line_thickness, outline=tuple(color))  # plot
+    if label:
+        fontsize = max(round(max(img.size) / 40), 12)
+        font = ImageFont.truetype("Arial.ttf", fontsize)
+        txt_width, txt_height = font.getsize(label)
+        draw.rectangle([box[0], box[1] - txt_height + 4, box[0] + txt_width, box[1]], fill=tuple(color))
+        draw.text((box[0], box[1] - txt_height + 1), label, fill=(255, 255, 255), font=font)
+    return np.asarray(img)
 
 def output_to_target(output, max_det=300):
     # Convert model output to target format [batch_id, class_id, x, y, w, h, conf] for plotting
@@ -284,7 +305,7 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None):
         if len(targets) > 0:
             ti = targets[targets[:, 0] == i]  # image targets
             boxes = xywh2xyxy(ti[:, 2:6]).T
-            classes = ti[:, 1].astype('int')
+            
             labels = ti.shape[1] == 6  # labels if no conf column
             conf = None if labels else ti[:, 6]  # check for confidence presence (label vs pred)
 
@@ -564,10 +585,13 @@ def save_one_box(xyxy, im, file=Path('im.jpg'), gain=1.02, pad=10, square=False,
     if square:
         b[:, 2:] = b[:, 2:].max(1)[0].unsqueeze(1)  # attempt rectangle to square
     b[:, 2:] = b[:, 2:] * gain + pad  # box wh * gain + pad
-    xyxy = xywh2xyxy_v3(b).long()
-    clip_boxes(xyxy, im.shape)
+    # xyxy = xywh2xyxy(b).long()
+    #000
+    # xyxy = xywh2xyxy_v3(b).long()
+    xyxy = xywh2xyxy(b).long()
+    
+    clip_coords(xyxy, im.shape)
     crop = im[int(xyxy[0, 1]):int(xyxy[0, 3]), int(xyxy[0, 0]):int(xyxy[0, 2]), ::(1 if BGR else -1)]
-    # crop = im[int(xyxy[0, 1]):int(xyxy[0, 2]), int(xyxy[0, 0]):int(xyxy[0, 1]), ::(1 if BGR else -1)]
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         f = str(increment_path(file).with_suffix('.jpg'))
