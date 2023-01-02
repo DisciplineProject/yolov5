@@ -30,6 +30,7 @@ import os
 import platform
 import sys
 from pathlib import Path
+from unittest import skip
 
 import torch
 
@@ -77,8 +78,12 @@ def run(
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         vid_stride=1,  # video frame-rate stride
+        #000 skip frame 0 รับค่าตัวแปล
+        skipframe=0,  #000
+        #000 legion detect 0 รับค่าตัวแปล
+        LG=[0,0],
         #000
-        kkkkk=0
+        # kkkkk=0
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -114,6 +119,12 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+    
+    #000 skip frame 1 (set up)
+    SkipFrame=True # เอาไว้หยุดด้วยมือ
+    SF=0
+    # print("\n Zzzzzzzasd ")
+    # ขั้นข้างล่างน่าจะเป็นขั้น predictions ของทุก frame
     for path, im, im0s, vid_cap, s in dataset:
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
@@ -133,7 +144,7 @@ def run(
 
         # Second-stage classifier (optional)
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
-
+        
         # Process predictions
         for i, det in enumerate(pred):  # per image
             seen += 1
@@ -142,6 +153,9 @@ def run(
                 s += f'{i}: '
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+                #000
+                # 
+                # print("\nzzzzzzzzz") ทำทุกอัน
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg
@@ -150,7 +164,26 @@ def run(
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+            
+            #000 skip frame 2 ใช้ skip frame
+            if SF and SkipFrame:
+                # print("\nZzzzzzzasd")
+                # print(SF)
+                s += "skip frame #000 "
+                SF-=1
+                continue
+            # print(s)  ล่างสุดของ for loop เพิ่ม ไม่ดีเทคกะเวลา Ex.image 14/14 D:\0_project\0_Git-Project\Demo\Demo_Pic2\frame12042.jpg: 384x640 1 Motorcycle, 2 Motorcycle+Drivers,
+            # print(len(det))   จำนวนทุกคราสที่ค้นพบ
+            # print(det)
+            
+            #000
+            # น่าจะถ้าเจอก็ทำด้านล่าง
             if len(det):
+                #000 skip frame 3 ใช้เพิ่มจำนวนที่จะ skip
+                SF+=skipframe
+                # print("\n Zzzzzzzasd ")
+                # print(SF)
+                
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
 
@@ -159,27 +192,34 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                # Write results
-                #000
-                kkkkk=0
+                #000 อัน for loop ด้านบน แต่ใส่ตรงนี้เพราะจะได้ดูง่ายๆ
+                # print("\n Zzzzzzzasd")
                 # print(c)
-                # print(n)
-                # print("asd\n")
-                # print(xyxy)
+                # print(n) # ต่อคราสใน loop Ex. 1 Motorcycle, 2 Motorcycle+Drivers ได้ tensor(1) tensor(2) ตามลำดับลูป
+                # print(s) # Texe ที่ขาดเวลาประมวณผล Ex.image 14/14 D:\0_project\0_Git-Project\Demo\Demo_Pic2\frame12042.jpg: 384x640 1 Motorcycle, 2 Motorcycle+Drivers,
+                
+                #000
+                # kkkkk=0
+                # print("\n Zzzzzzzasd")
+                # print(xyxy[0])    Error
                 
                 for *xyxy, conf, cls in reversed(det):
                     # #000
                     # print("\nxxx")
                     # print(xyxy)
                     # print("zzz")
+                    #000
                     # print(torch.tensor(xyxy))
                     # print("test")
                     # xyxy[1]=250
                     # print(xyxy[3])
-                    if xyxy[3]<800 or xyxy[2]>700: # >800 ติดรถขวา
+                    
+                    #000 legion detect 1
+                    if LG[0]>xyxy[0] or LG[1]>xyxy[1]: # >800 ติดรถขวา
                         # print("yes")
+                        s += "Dont in Legion #000 "
                         continue
-                    # print(torch.tensor(xyxy))
+                    # # print(torch.tensor(xyxy))
                     
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
@@ -192,9 +232,10 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
-                        # save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}+{str(kkkkk)}.jpg', BGR=True)
-                        kkkkk+=1
+                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        #000
+                        # save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}+{str(kkkkk)}.jpg', BGR=True)
+                        # kkkkk+=1
             
             #000
             # print(f"\n{str(kkkkk)}\n")
@@ -227,7 +268,8 @@ def run(
                         save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
-
+            
+            
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
@@ -248,7 +290,7 @@ def parse_opt():
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob/screen/0(webcam)')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
-    parser.add_argument('--conf-thres', type=float, default=0.8, help='confidence threshold')      ##00 #01
+    parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')      ##00 #01
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')   #00
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
@@ -271,6 +313,10 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
+    #000 skip frame 4 เซ็ตคำสั่ง
+    parser.add_argument('--skipframe', type=int, default=0, help='skipframe (int)')
+    #000 legion detect 2 เซ็ตคำสั่ง
+    parser.add_argument('--LG', type=int,nargs='+', help='legion detect (int x) (int y)')
     # parser.add_argument('--crop', action='store_true',help='crop the border box')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand

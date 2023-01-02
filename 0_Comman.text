@@ -1,0 +1,24 @@
+git add .
+git commit -m ""
+git pull
+git push
+
+D:\0_project\0_Git-Project\Demo
+
+python detect.py --weights motorcycle.pt --source ../../Common_VideoFrameSpliter/result9 --save-crop
+python detect.py --weights motorcycle.pt --source ../Demo/Demo_Pic
+
+python detect.py --weights motorcycle.pt --source ../Demo/Demo_Pic2 --skipframe 1
+python detect.py --weights motorcycle.pt --source ../Demo/Demo_Pic2 --LG 1000 200
+
+#000 skip frame (ตัวเลขลำดับ 0-4)      #ไว้หา ส่วนที่ไว้ skip frame
+#000 legion detect (ตัวเลขลำดับ 0-2)   #ไว้หา ส่วนที่ไว้ legion detect
+
+
+
+
+
+
+
+
+
