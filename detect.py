@@ -214,12 +214,15 @@ def run(
                     # xyxy[1]=250
                     # print(xyxy[3])
                     
-                    #000 legion detect 1
-                    if LG[0]>xyxy[0] or LG[1]>xyxy[1]: # >800 ติดรถขวา
+                    # print("KUYYYYYYY")
+                    # print(LG)
+                    
+                    # 000 legion detect 1
+                    if (LG[0]>xyxy[0] or LG[1]>xyxy[1]) and (LG[0]!=0 or LG[1]!=0): # >800 ติดรถขวา
                         # print("yes")
                         s += "Dont in Legion #000 "
                         continue
-                    # # print(torch.tensor(xyxy))
+                    # print(torch.tensor(xyxy))
                     
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
@@ -290,7 +293,7 @@ def parse_opt():
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob/screen/0(webcam)')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
-    parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')      ##00 #01
+    parser.add_argument('--conf-thres', type=float, default=0.7, help='confidence threshold')      ##00 #01
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')   #00
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
@@ -316,7 +319,7 @@ def parse_opt():
     #000 skip frame 4 เซ็ตคำสั่ง
     parser.add_argument('--skipframe', type=int, default=0, help='skipframe (int)')
     #000 legion detect 2 เซ็ตคำสั่ง
-    parser.add_argument('--LG', type=int,nargs='+', help='legion detect (int x) (int y)')
+    parser.add_argument('--LG', type=int,nargs='+' , default=[0,0], help='legion detect (int x) (int y)')
     # parser.add_argument('--crop', action='store_true',help='crop the border box')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
